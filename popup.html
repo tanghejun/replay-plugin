@@ -1,0 +1,23 @@
+
+<!doctype html>
+<html>
+  <head>
+    <title>Set Page Color Popup</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+  </head>
+  <body ng-app="replay" ng-controller="Ctrl as Main">
+    <section class="info">
+      <i>{{Main.info}}</i>
+    </section>
+
+    <main>
+      <section class="controlls">
+        <button class="play" ng-disabled="Main.disableBtn" ng-click="Main.play()">Play</button>
+        <button class="pause" ng-disabled="Main.disableBtn" ng-click="Main.pause()">Pause</button>
+        <button class="stop" ng-disabled="Main.disableBtn" ng-click="Main.stop()">Stop</button>
+      </section>
+    </main>
+    <script src="angular.min.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

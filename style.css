@@ -1,0 +1,59 @@
+body {
+	font-size: 16px;
+	background-color: white;
+	width: 210px;
+}
+
+section.info {
+
+}
+
+main {
+	margin: 10px;
+}
+main .controlls {
+	margin: 10px 0;
+	text-align: center;
+}
+
+.controlls button {
+	color: white;
+	width: 55px;
+	height: 34px;
+	border-radius: 20px;
+	margin-left: 5px;
+	border: 1px solid #ccc;
+	cursor: pointer;
+	text-align: center;
+}
+.controlls button:active {
+	background-image: none;
+	outline: 0;
+	box-shadow: inset 0 3px 5px rgba(0,0,0,.125);
+}
+
+.controlls button[disabled] {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+button.play {
+	background-color: #5cb85c;
+}
+button.play:active {
+	background-color: #449d44
+}
+
+button.pause {
+	background-color: #f0ad4e;
+}
+button.pause:active {
+	background-color: #ec971f;
+}
+
+button.stop {
+	background-color: #d9534f;
+}
+button.stop:active {
+	background-color: #c9302c;
+}
