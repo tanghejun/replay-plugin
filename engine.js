@@ -1,9 +1,7 @@
 var engine = (function() {
-    console.log('inserted');
+    console.log('replay engine loaded.');
     var API = {},
         _session = {},
-        _iframe,
-        _iframeClass = 'itrack',
         _mouseSvg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAQAAAAm93DmAAADJUlEQVRIx63Ve0hTURwH8LO7h7vbdU7nnNt8pDPcsKb9UWbPpSlLxF5UihkmA9GoKAsi8I/6o4xeGhFFL6xA6EHpH2XPP6wIgzCz3BopNIPeSIQFZX37LZUeRGx39xwunPM7Ox9+59xzzxiYtPXfQRalVKtYSCVEMHfCyWWSgiYrtjTmSQim6wLbsa86VTJwivJK4xygdnq8RKBTObCRYXM/ymMFaUDF07VJ1Dx9b9jNFBKAkxW+GivSqfO47X6eFKDc57EgE2YogBNHcyJfMuerMmMiHBAIxc416ZGBssmcrzIRNmTATgHXB9TPMkYIeleaaA9t9EykUF0AHpMQAegk0IgJSKMnBakUbO7GUhUfUYbxRAW5JFhhpHDnrcHiSMCKOCRTTYKFXosZ0TQQaL8+QzTYV6GnzIJcIhIoQyOUNITjexxiQM7J9a3Q/cwsyMXDgDjE0JD1K3asShZzDvm+GgEmqqNcLJ1HFWQ0WDiEzTlx4X8pem+zhigjYQbooaEvZny4vh9VanW4YLTvFE/LHF2qGvKxIe5nq/X+UAmThQVOEnwn1JRZHL1dFTHBsIwwJXjqMzzr6JwdHqj1HVZBBy0RsrHcZH/8aOTM/qxwlsx7mzjKZXzngtjUriPHdnVVv1jysfhbAp1QtJRlhA7K+jb9CkzrNb1jeOB+zs6ar+XeLL3j8W/tuOA/h0aXPTRQ4WS9C8e7y+9CebyO4erOlrHrgWOp6iKtK6XaVeIIDZRnK7oXjXaqPqGwVHiSFTti+/DOyetFfnrZ8p7yYLPsLRrmJTJ2W9vUyvBwfQMv9vqSPypjKO5FRYE1OG211l/NsOGa38A04jLk2tblvYbdPT5d99I+N6DEK/fMaFGXg0U/vBiukt/u6EtR5w4yXGw+z4v6k7JYMXdpwu8T803DRQIWvHhj5/QiwBQhP+2v3de9mlR/g2Ggdq1GBPivcsDR3cSwu73HwHhJQIv57abcLw68L8jWSwIy1rXwiJfh5t4WjURgXebgZYb5/d+ztXpJQIUqsO/64MA2zLEZJQEZO7Tic6VHJY+RaMlU5HTV/Pdg/wDEX1fdN0jfnwAAAABJRU5ErkJggg==",
         _mouseSize = "20px",
         _mouse = {},
@@ -15,10 +13,10 @@ var engine = (function() {
         };
 
     function init(session) {
-        console.log('init called');
         prepareSession(session);
-        // _iframe = createFrame(wrapper);
         _mouse = drawMouse();
+        console.log('engine initialized');
+        // should resize the window according to meta, but this functionality is limited in web pages.
     }
 
     function prepareSession(session) {
@@ -58,35 +56,6 @@ var engine = (function() {
 
     }
 
-
-
-
-    function createFrame(wrapper) {
-        if(_iframe) {
-            _iframe.parentNode.removeChild(_iframe)
-        }
-        var src = _session.meta.url;
-        var w = _session.meta.size.split(',')[0]
-        var h = _session.meta.size.split(',')[1]
-
-        var iframe = document.createElement('iframe');
-        iframe.onload = function() {
-            // emit events to outside world.
-            console.info('iTrackFrameLoaded');
-            window.dispatchEvent(new Event('iTrackFrameLoaded'));
-            _mouse = drawMouse();
-            iframe.contentDocument.body.appendChild(_mouse);
-        }
-        iframe.src = _session.meta.url;
-        iframe.width = w;
-        iframe.height = h;
-        iframe.className = _iframeClass;
-
-        document.body.appendChild(iframe);
-        return iframe;
-    }
-
-
     function drawMouse() {
         var mouse = document.createElement('div')
 
@@ -125,7 +94,6 @@ var engine = (function() {
         if (_context.timer) {
             clearInterval(_context.timer);
         }
-
     }
 
     function stop() {
@@ -134,7 +102,6 @@ var engine = (function() {
         }
         resetContext();
         cleanDots();
-
     }
 
     function cleanDots() {
@@ -175,7 +142,6 @@ var engine = (function() {
             if (around(_context.time, eachEvent.last())) {
                 if (eachEvent[0] === 'm') {
                     move(eachEvent);
-
                 } else if (eachEvent[0] === 's') {
                     scroll(eachEvent, _context.index);
 
@@ -192,8 +158,6 @@ var engine = (function() {
             }
             _context.time += 10;
         }, 10)
-
-
     }
 
     function resetContext() {

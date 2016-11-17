@@ -1,27 +1,31 @@
 angular.module('replay', [])
     .constant('API_HOST', 'http://localhost/')
-    .controller('Ctrl', ['session', function(session) {
+    .controller('Ctrl', ['session', '$scope', function(session, $scope) {
         var ctrl = this;
         ctrl.disableBtn = true;
         ctrl.info = 'loading...'
         var currentTab = null;
+        var currentSession = null;
         chrome.tabs.query({ 'active': true, 'lastFocusedWindow': true }, function(tabs) {
             currentTab = tabs[0]
             var sessionId = getParameterByName('replay_session_id', currentTab.url);
             console.log('sessionId: ', sessionId);
 
-            session.get(sessionId).then(function(data) {
+            session
+                .get(sessionId)
+                .then(function(data) {
                     ctrl.info = 'Session Loaded'
-                    var currentSession = data.data;
+                    currentSession = data.data;
                     if (compareUrl(currentSession.meta.url, currentTab.url)) {
-                        chrome.tabs.sendMessage(
-                            currentTab.id,
-                            { from: 'popup', subject: 'init', data: currentSession },
-                            function() {
-                                ctrl.info = 'Ready.'
-                                ctr.disableBtn = false;
+                        chrome.tabs.sendMessage(currentTab.id, { from: 'popup', subject: 'init', data: currentSession }, function(response) {
+                            if (response.status) {
+                                ctrl.info = 'Ready to roll'
+                                ctrl.disableBtn = false;
+                            } else {
+                                ctrl.info = 'failt to send message'
                             }
-                        );
+                            $scope.$apply()
+                        });
                     } else {
                         ctrl.info = "URL doesn't match"
                     }
@@ -32,7 +36,10 @@ angular.module('replay', [])
         });
 
         ctrl.play = function() {
-            chrome.tabs.sendMessage(currentTab.id, { from: 'popup', subject: 'play' });
+            resizeWindow(currentSession, function() {
+                chrome.tabs.sendMessage(currentTab.id, { from: 'popup', subject: 'play' });
+            })
+            window.close();
         }
 
         ctrl.pause = function() {
@@ -41,6 +48,15 @@ angular.module('replay', [])
 
         ctrl.stop = function() {
             chrome.tabs.sendMessage(currentTab.id, { from: 'popup', subject: 'stop' });
+        }
+
+        function resizeWindow(session, cb) {
+            //set window size by meta.size
+            chrome.windows.getCurrent(null, function(window) {
+                var w = Number(session.meta.size.split(',')[0])
+                var h = Number(session.meta.size.split(',')[1])
+                chrome.windows.update(window.id, { width: w, height: h }, cb)
+            })
         }
 
         // check if protocal://host/path match

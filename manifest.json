@@ -1,25 +1,28 @@
 {
-  "manifest_version": 2,
+    "manifest_version": 2,
+    "name": "replay",
+    "description": "This extension replays",
+    "version": "1.0",
 
-  "name": "replay",
-  "description": "This extension shows a Google Image search result for the current page",
-  "version": "1.0",
+    "background": {
+        "persistent": false,
+        "scripts": ["background.js"]
+    },
 
-  "browser_action": {
-    "default_icon": "icon.png",
-    "default_popup": "popup.html",
-    "default_title": "Replay"
-  },
+    "page_action": {
+        "default_icon": "icon.png",
+        "default_popup": "popup.html",
+        "default_title": "Replay"
+    },
 
-  "content_scripts": [
-    {
-      "matches": ["*://*/*replay_session_id=*"],
-      "js": ["engine.js", "content.js"]
-    }
-  ],
-  "permissions": [
-    "tabs",
-    "activeTab",
-    "http://localhost/"
-  ]
+    "content_scripts": [{
+        "matches": ["*://*/*replay_session_id=*"],
+        "js": ["engine.js", "content.js"]
+    }],
+
+    "permissions": [
+        "tabs",
+        "activeTab",
+        "http://localhost/"
+    ]
 }
