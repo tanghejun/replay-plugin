@@ -1,5 +1,5 @@
 angular.module('replay', [])
-    .constant('API_HOST', 'http://localhost/')
+    .constant('API_HOST', 'http://d.admx.baixing.com:8885/')
     .controller('Ctrl', ['session', '$scope', function(session, $scope) {
         var ctrl = this;
         ctrl.disableBtn = true;
