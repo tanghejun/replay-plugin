@@ -6,6 +6,8 @@ var engine = (function() {
         _mouseSize = "20px",
         _mouse = {},
         _clickPointSize = '10px',
+        _progressBar,
+        _progress,
         _context = {
             time: 0,
             index: 0,
@@ -13,17 +15,19 @@ var engine = (function() {
         };
 
     function init(session) {
-        prepareSession(session);
+        _session = parse(session);
+        console.log(_session);
         _mouse = drawMouse();
-        console.log('engine initialized');
+        _progressBar = drawProgressBar(_session.events, 0);
+        console.info('session loaded into engine');
         // should resize the window according to meta, but this functionality is limited in web pages.
     }
 
-    function prepareSession(session) {
+    function parse(session) {
         checkSession(session);
 
         // resolve comma separated data into array
-        var result = session.events.map(function(action) {
+        session.events = session.events.map(function(action) {
             var arr = action.split(',');
             // parse timeStamp
             arr[arr.length - 1] = parseInt(arr.last());
@@ -33,26 +37,25 @@ var engine = (function() {
             }
             return arr;
         })
-        session.events = result;
 
-        // for unknown reason, when scroll with mousemove, there's some chance the latter event captured before the previous one. so order them by timeStamp before storing them.
+        // when scroll with mousemove, there's chance latter event captured before the previous one.
+        // so order them by timeStamp before storing them.
         session.events.sort(function(a, b) {
             return a.last() - b.last();
         });
-
-        _session = session;
+        return session;
     }
 
-    function checkSession(s) {
-        if (toString.call(s) !== '[object Object]') {
-            throw 'session should be an object'
+    function checkSession(session) {
+        if (toString.call(session) !== '[object Object]') {
+            throw new Error('session should be an object')
         }
 
         /* check meta/data/id */
-        if (!s._id || !s.meta || !s.events) {
-            throw "corrupted session data"
+        if (!session._id || !session.meta || !session.events) {
+            throw new Error("corrupted session data")
         }
-        /* maybe more check later, like time sequence, data format */
+         // maybe more check later, like time sequence, data format
 
     }
 
@@ -90,7 +93,126 @@ var engine = (function() {
         return mouse;
     }
 
+    function drawProgressBar(eventArr, curTime) {
+        if(!_progressBar) {
+            _progressBar = document.createElement('div')
+            _progressBar.style.position = 'fixed'
+            _progressBar.style.bottom = '0px'
+            _progressBar.style.width = '100%'
+            _progressBar.style.height = '10px'
+            _progressBar.style.backgroundColor = '#eee'
+            // _progressBar.style.opacity = '0.4'
+            _progressBar.style.zIndex = '1000'
+            document.body.appendChild(_progressBar)
+
+            var timeLength = eventArr.last().last() - 0
+            var progressBarLength = _progressBar.getBoundingClientRect().width;
+            eventArr.forEach(function(event) {
+                var eventDot = document.createElement('div')
+                eventDot.style.position = 'absolute'
+                eventDot.style.left = ( event.last() / timeLength ) * progressBarLength + 'px'
+                if(event[0] === 'c') {
+                    eventDot.style.backgroundColor = '#F44336'
+                    eventDot.title ='click'
+                } else if(event[0] === 's') {
+                    eventDot.style.backgroundColor = '#4CAF50'
+                    eventDot.title ='scroll'
+                } else if(event[0] === 'm') {
+                    eventDot.style.backgroundColor = '#9E9E9E'
+                    eventDot.title ='move'
+                } else if(event[0] === 'i') {
+                    eventDot.style.backgroundColor = '#2962FF'
+                    eventDot.title ='input'
+                }
+                eventDot.style.width = '3px'
+                eventDot.style.height = '10px'
+                // eventDot.style.borderRadius = '50%'
+                _progressBar.appendChild(eventDot)
+            })
+        }
+
+        if(!_progress) {
+            _progress = document.createElement('div')
+            _progress.id = 'progress'
+            _progress.style.position = 'fixed'
+            _progress.style.bottom = '10px'
+            _progress.style.height = '3px'
+            _progress.style.width = '0'
+            _progress.style.backgroundColor = 'red'
+            _progress.style.zIndex = '999'
+            document.body.appendChild(_progress)
+        }
+        var timeLength = eventArr.last().last() - 0
+        var progressBarLength = _progressBar.getBoundingClientRect().width;
+        _progress.style.width = curTime / timeLength * progressBarLength + 'px'
+    }
+
+    // controlls
+    function play(speed) {
+        if(_context.timer) {
+            console.log('already playing');
+            return;
+        }
+        console.log('play called');
+        // var mySession = Object.assign({}, _session);
+        var mySession = _session.clone();
+        console.log(mySession.events[0]);
+        speed = speed || 1;
+        if (typeof speed !== 'number' || speed !== speed) {
+            throw 'speed should be a number';
+        }
+        if (speed > 5 || speed < 0) {
+            throw 'invalid speed number, (0,5)';
+        }
+
+        // speep up time
+        if (speed !== 1) {
+            mySession.events = mySession.events.map(function(eachEvent) {
+                eachEvent[eachEvent.length - 1] /= speed;
+                return eachEvent;
+            })
+        }
+
+        // play logic
+        var eventLength = mySession.events.length;
+
+        _context.timer = setInterval(function tick() {
+            // console.log('now', parseFloat(_context.time / 1000));
+            console.log(_context.index);
+            if (_context.index >= eventLength) {
+                if (_context.timer) {
+                    clearInterval(_context.timer);
+                }
+                resetContext();
+                return;
+            }
+            var curEvent = mySession.events[_context.index];
+            if (closeEnough(_context.time, curEvent.last())) {
+                if (curEvent[0] === 'm') {
+                    move(curEvent);
+
+                } else if (curEvent[0] === 's') {
+                    scroll(curEvent, _context.index);
+
+                } else if (curEvent[0] === 'k') {
+                    keypress(curEvent, _context.index);
+
+                } else if (curEvent[0] === 'c') {
+                    click(curEvent);
+
+                } else if (curEvent[0] === 'i') {
+                    input(curEvent, _context.index);
+
+                }
+                _context.index++;
+            }
+            _context.time += 10;
+            drawProgressBar(_session.events, _context.time * speed)
+        }, 10)
+    }
+
     function pause() {
+        console.log('pause @', _context.time / 1000 + 's');
         if (_context.timer) {
             clearInterval(_context.timer);
         }
@@ -102,6 +224,9 @@ var engine = (function() {
         }
         resetContext();
         cleanDots();
+        _progress.style.width = 0;
+        _mouse.style.left = '10px'
+        _mouse.style.top = '10px'
     }
 
     function cleanDots() {
@@ -111,64 +236,57 @@ var engine = (function() {
         }
     }
 
-    function play(speed) {
-        console.log('play called');
-        var mySession = Object.assign({}, _session);
-        speed = speed || 1;
-        if (typeof speed !== 'number' || speed !== speed) {
-            throw 'speed should be a number';
-        }
-        if (speed > 5 || speed < 0) {
-            throw 'invalid speed number, (0,5)';
-        }
-
-        if (speed !== 1) {
-            var data = mySession.events.map(function(eachEvent) {
-                eachEvent[eachEvent.length - 1] /= speed;
-                return eachEvent;
-            })
-            mySession.events = data;
-        }
-
-        // play logic
-        var length = mySession.events.length;
-
-        _context.timer = setInterval(function() {
-            if (_context.index === length) {
-                stop();
-                return;
-            }
-            var eachEvent = mySession.events[_context.index];
-            if (around(_context.time, eachEvent.last())) {
-                if (eachEvent[0] === 'm') {
-                    move(eachEvent);
-                } else if (eachEvent[0] === 's') {
-                    scroll(eachEvent, _context.index);
-
-                } else if (eachEvent[0] === 'k') {
-                    keypress(eachEvent, _context.index);
-
-                } else if (eachEvent[0] === 'c') {
-                    click(eachEvent);
-
-                } else if (eachEvent[0] === 'i') {
-                    input(eachEvent, _context.index);
-                }
-                _context.index++;
-            }
-            _context.time += 10;
-        }, 10)
-    }
-
     function resetContext() {
         _context.index = 0;
         _context.time = 0;
         _context.timer = null;
     }
 
-    function around(now, t) {
-        console.log('now', parseFloat(now / 1000));
+    function closeEnough(now, t) {
         return Math.abs(now - t) <= 11;
+    }
+
+    // simulate user events
+    function click(event) {
+        // create clickPoint wrapper if there isnt one.
+        var wrapper = window.document.getElementsByClassName('click-point-wrapper');
+        if (wrapper.length === 0) {
+            var wrapper = document.createElement('div');
+            wrapper.className = "click-point-wrapper"
+        } else {
+            wrapper = wrapper[0];
+        }
+        // style checkPoint
+        var clickPoint = document.createElement('div');
+        clickPoint.style.position = "absolute";
+        clickPoint.style.zIndex = 99999999;
+        clickPoint.style.width = _clickPointSize;
+        clickPoint.style.height = _clickPointSize;
+        clickPoint.style.backgroundColor = "red";
+        clickPoint.style.opacity = 0.6;
+        clickPoint.style.borderRadius = "50%";
+        clickPoint.style.left = event[1] + 'px';
+        clickPoint.style.top = event[2] + 'px';
+        clickPoint.className = "click-point";
+
+        wrapper.appendChild(clickPoint);
+        window.document.body.appendChild(wrapper);
+
+        // simulate user click, focus and dispatch click event
+        var clickTarget = window.document.querySelector(event[3]);
+        if (clickTarget) {
+            clickTarget.focus();
+
+            // ele.click() fn only works for certain element types, like input
+            clickTarget.click();
+            if (clickTarget.nodeName === "LABEL" && clickTarget.attributes['for']) {
+                window.document.getElementById(clickTarget.attributes['for'].nodeValue).focus()
+
+            }
+        } else {
+            console.warn('clickTarget not found: ', clickTarget);
+        }
+        console.log('click at', event);
     }
 
     function move(event) {
@@ -220,48 +338,6 @@ var engine = (function() {
     }
 
 
-    function click(event) {
-        // create clickPoint wrapper if there isnt one.
-        var wrapper = window.document.getElementsByClassName('click-point-wrapper');
-        if (wrapper.length === 0) {
-            var wrapper = document.createElement('div');
-            wrapper.className = "click-point-wrapper"
-        } else {
-            wrapper = wrapper[0];
-        }
-        // style checkPoint
-        var clickPoint = document.createElement('div');
-        clickPoint.style.position = "absolute";
-        clickPoint.style.zIndex = 99999999;
-        clickPoint.style.width = _clickPointSize;
-        clickPoint.style.height = _clickPointSize;
-        clickPoint.style.backgroundColor = "red";
-        clickPoint.style.opacity = 0.6;
-        clickPoint.style.borderRadius = "50%";
-        clickPoint.style.left = event[1] + 'px';
-        clickPoint.style.top = event[2] + 'px';
-        clickPoint.className = "click-point";
-
-        wrapper.appendChild(clickPoint);
-        window.document.body.appendChild(wrapper);
-
-        // simulate user click, focus and dispatch click event
-        var clickTarget = window.document.querySelector(event[3]);
-        if (clickTarget) {
-            clickTarget.focus();
-
-            // ele.click() fn only works for certain element types, like input
-            clickTarget.click();
-            if (clickTarget.nodeName === "LABEL" && clickTarget.attributes['for']) {
-                window.document.getElementById(clickTarget.attributes['for'].nodeValue).focus()
-
-            }
-        } else {
-            console.warn('clickTarget not found: ', clickTarget);
-        }
-        console.log('click at', event);
-
-    }
 
     /* util */
     if (!Array.prototype.last) {
@@ -270,37 +346,14 @@ var engine = (function() {
         };
     };
 
-    if (!Object.assign) {
-        Object.defineProperty(Object, 'assign', {
-            enumerable: false,
-            configurable: true,
-            writable: true,
-            value: function(target) {
-                'use strict';
-                if (target === undefined || target === null) {
-                    throw new TypeError('Cannot convert first argument to object');
-                }
-
-                var to = Object(target);
-                for (var i = 1; i < arguments.length; i++) {
-                    var nextSource = arguments[i];
-                    if (nextSource === undefined || nextSource === null) {
-                        continue;
-                    }
-                    nextSource = Object(nextSource);
-
-                    var keysArray = Object.keys(nextSource);
-                    for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex++) {
-                        var nextKey = keysArray[nextIndex];
-                        var desc = Object.getOwnPropertyDescriptor(nextSource, nextKey);
-                        if (desc !== undefined && desc.enumerable) {
-                            to[nextKey] = nextSource[nextKey];
-                        }
-                    }
-                }
-                return to;
-            }
-        });
+    Object.prototype.clone = function() {
+      var newObj = (this instanceof Array) ? [] : {};
+      for (var i in this) {
+        if (i == 'clone') continue;
+        if (this[i] && typeof this[i] == "object") {
+          newObj[i] = this[i].clone();
+        } else newObj[i] = this[i]
+      } return newObj;
     }
 
     API.init = init;
