@@ -43,6 +43,21 @@ var engine = (function() {
         session.events.sort(function(a, b) {
             return a.last() - b.last();
         });
+
+        // filter out timespan when user has no interaction at all
+        var lastEvent = []
+        var events = session.events;
+        for(var i=0; i<events.length; i++) {
+            if( i === 0 ) {
+                lastEvent = events[i]
+                continue;
+            }
+            if( events[i].last() - lastEvent.last() > 5000) {
+                lastEvent.jump = events[i].last() - 1000
+            }
+            events[i - 1] = lastEvent.clone();
+            lastEvent = events[i]
+        }
         return session;
     }
 
@@ -184,9 +199,11 @@ var engine = (function() {
                     clearInterval(_context.timer);
                 }
                 resetContext();
+                showHint('done', 1000)
                 return;
             }
             var curEvent = mySession.events[_context.index];
+
             if (closeEnough(_context.time, curEvent.last())) {
                 if (curEvent[0] === 'm') {
                     move(curEvent);
@@ -204,6 +221,12 @@ var engine = (function() {
                     input(curEvent, _context.index);
 
                 }
+
+                if(curEvent.jump) {
+                    console.log('jump to: ', curEvent.jump);
+                    showHint('skip blank...')
+                    _context.time = curEvent.jump;
+                }
                 _context.index++;
             }
             _context.time += 10;
@@ -211,14 +234,48 @@ var engine = (function() {
         }, 10)
     }
 
+    var _hint;
+    function showHint(text, last) {
+        if( !_hint ) {
+            _hint = document.createElement('div')
+            _hint.style.position = 'fixed'
+            _hint.style.left = '50%'
+            _hint.style.transform = 'translateX(-50%)'
+            _hint.style.bottom = '50px'
+            _hint.style.width = '120px'
+            _hint.style.height = '20px'
+            _hint.style.padding = '5px'
+            _hint.style.textAlign = 'center'
+            _hint.style.backgroundColor = '#888'
+            _hint.style.color = 'white'
+            _hint.style.zIndex = '10000'
+            _hint.style.borderRadius = '4px'
+            document.body.appendChild(_hint)
+        }
+        _hint.innerText = text
+        _hint.style.opacity = '1'
+        _hint.style.transition = 'opacity 0.2s'
+        setTimeout(function() {
+            hideHint()
+        }, last || 500)
+    }
+
+    function hideHint() {
+        if(_hint) {
+            _hint.style.opacity = '0'
+        }
+    }
+
     function pause() {
-        console.log('pause @', _context.time / 1000 + 's');
+        showHint('paused', 1000)
         if (_context.timer) {
             clearInterval(_context.timer);
+            _context.timer = null;
         }
     }
 
     function stop() {
+        showHint('screen cleaned', 1000)
         if (_context.timer) {
             clearInterval(_context.timer);
         }
