@@ -27,10 +27,18 @@ var engine = (function() {
         checkSession(session);
 
         // resolve comma separated data into array
-        session.events = session.events.map(function(action) {
+        var startTime = 0
+        session.events = session.events.map(function(action, index) {
             var arr = action.split(',');
             // parse timeStamp
             arr[arr.length - 1] = parseInt(arr.last());
+
+            // strip idle time at the begining
+            if(index === 0) {
+                startTime = arr.last()
+            } else {
+                arr[arr.length -1] = arr.last() - startTime
+            }
             // decode element selector for click/scroll data
             if (arr[0] === 'c' || (arr[0] === 's' && arr.length === 5)) {
                 arr[3] = decodeURIComponent(escape(atob(arr[3])));
