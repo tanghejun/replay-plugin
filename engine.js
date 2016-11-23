@@ -33,12 +33,11 @@ var engine = (function() {
             // parse timeStamp
             arr[arr.length - 1] = parseInt(arr.last());
 
-            // strip idle time at the begining
+            // replace idle time at the begining with 1s
             if(index === 0) {
-                startTime = arr.last()
-            } else {
-                arr[arr.length -1] = arr.last() - startTime
+                startTime = arr.last() - 1000
             }
+            arr[arr.length -1] = arr.last() - startTime
             // decode element selector for click/scroll data
             if (arr[0] === 'c' || (arr[0] === 's' && arr.length === 5)) {
                 arr[3] = decodeURIComponent(escape(atob(arr[3])));
@@ -121,10 +120,11 @@ var engine = (function() {
             _progressBar = document.createElement('div')
             _progressBar.style.position = 'fixed'
             _progressBar.style.bottom = '0px'
-            _progressBar.style.width = '100%'
+            _progressBar.style.width = '90%'
             _progressBar.style.height = '10px'
+            _progressBar.style.left = '50%'
+            _progressBar.style.transform = 'translateX(-50%)'
             _progressBar.style.backgroundColor = '#eee'
-            // _progressBar.style.opacity = '0.4'
             _progressBar.style.zIndex = '1000'
             document.body.appendChild(_progressBar)
 
@@ -133,7 +133,7 @@ var engine = (function() {
             eventArr.forEach(function(event) {
                 var eventDot = document.createElement('div')
                 eventDot.style.position = 'absolute'
-                eventDot.style.left = ( event.last() / timeLength ) * progressBarLength + 'px'
+                eventDot.style.left = ( event.last() / timeLength * 100 ) + '%'
                 if(event[0] === 'c') {
                     eventDot.style.backgroundColor = '#F44336'
                     eventDot.title ='click'
@@ -163,11 +163,11 @@ var engine = (function() {
             _progress.style.width = '0'
             _progress.style.backgroundColor = 'red'
             _progress.style.zIndex = '999'
-            document.body.appendChild(_progress)
+            _progressBar.appendChild(_progress)
         }
         var timeLength = eventArr.last().last() - 0
         var progressBarLength = _progressBar.getBoundingClientRect().width;
-        _progress.style.width = curTime / timeLength * progressBarLength + 'px'
+        _progress.style.width = 'calc(' + ( curTime / timeLength * 100) + '% + 3px)'
     }
 
     // controlls
@@ -201,7 +201,6 @@ var engine = (function() {
 
         _context.timer = setInterval(function tick() {
             // console.log('now', parseFloat(_context.time / 1000));
-            console.log(_context.index);
             if (_context.index >= eventLength) {
                 if (_context.timer) {
                     clearInterval(_context.timer);
