@@ -359,32 +359,22 @@ var engine = (function() {
         console.log('move to ', event);
     }
 
+    var lastSCrollSelector = '';
     function scroll(event, index) {
-        var lastScrollSelector = findLastScrollSelector(index);
-        if (!lastScrollSelector) {
-            console.error('scroll target not found');
+        if(event.length === 5) {
+            lastScrollSelector = event[3]
+        }
+        if( !lastScrollSelector ) {
+            console.error('scroll target not found')
+        }
+        if (lastScrollSelector === 'document') {
+            window.scroll(event[1], event[2]);
         } else {
-            if (lastScrollSelector === 'document') {
-                window.scroll(event[1], event[2]);
-                console.log('scroll document to', event);
-            } else {
-                var target = window.document.querySelector(lastScrollSelector);
-                target.scrollLeft = event[1];
-                target.scrollTop = event[2];
-            }
-            console.log('scroll to', target, event);
+            var target = window.document.querySelector(lastScrollSelector);
+            target.scrollLeft = event[1];
+            target.scrollTop = event[2];
         }
-    }
-
-    function findLastScrollSelector(index) {
-        var selector = null;
-        for (var i = index; i >= 0; i--) {
-            if (_session.events[i][0] === 's' && _session.events[i].length === 5) {
-                selector = _session.events[i][3];
-                break;
-            }
-        }
-        return selector;
+        console.log('scroll to', lastScrollSelector, event);
     }
 
     /* need index to search forward to find the input element */
@@ -400,7 +390,6 @@ var engine = (function() {
             inputElement.value = event[1];
         }
     }
-
 
 
     /* util */
@@ -420,6 +409,7 @@ var engine = (function() {
       } return newObj;
     }
 
+    /* API */
     API.init = init;
     API.play = play;
     API.pause = pause;
