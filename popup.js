@@ -55,7 +55,7 @@ angular.module('replay', [])
             chrome.windows.getCurrent(null, function(window) {
                 var w = Number(session.meta.size.split(',')[0])
                 var h = Number(session.meta.size.split(',')[1])
-                chrome.windows.update(window.id, { width: w, height: h }, cb)
+                chrome.windows.update(window.id, { width: w, height: h + 100 }, cb)
             })
         }
 

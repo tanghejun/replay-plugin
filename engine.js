@@ -43,13 +43,20 @@ var engine = (function() {
                 arr[3] = decodeURIComponent(escape(atob(arr[3])));
             }
             return arr;
-        })
+        });
+
+        // filter out invalid event time
+        session.events = session.events.filter(function(event) {
+            return event.last() > 0;
+        });
 
         // when scroll with mousemove, there's chance latter event captured before the previous one.
         // so order them by timeStamp before storing them.
         session.events.sort(function(a, b) {
             return a.last() - b.last();
         });
+
+
 
         // filter out timespan when user has no interaction at all
         var lastEvent = []
