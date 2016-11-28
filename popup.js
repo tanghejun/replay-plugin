@@ -9,7 +9,6 @@ angular.module('replay', [])
         chrome.tabs.query({ 'active': true, 'lastFocusedWindow': true }, function(tabs) {
             currentTab = tabs[0]
             var sessionId = getParameterByName('replay_session_id', currentTab.url);
-            console.log('sessionId: ', sessionId);
 
             session
                 .get(sessionId)
@@ -37,9 +36,10 @@ angular.module('replay', [])
 
         ctrl.play = function() {
             resizeWindow(currentSession, function() {
-                chrome.tabs.sendMessage(currentTab.id, { from: 'popup', subject: 'play' });
+                chrome.tabs.sendMessage(currentTab.id, { from: 'popup', subject: 'play' }, function() {
+                    window.close();
+                });
             })
-            window.close();
         }
 
         ctrl.pause = function() {
