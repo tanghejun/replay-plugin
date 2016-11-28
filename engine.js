@@ -238,7 +238,7 @@ var engine = (function() {
             }
             var curEvent = mySession.events[_context.index];
 
-            if (closeEnough(_context.time, curEvent.last())) {
+            while (closeEnough(_context.time, curEvent.last())) {
                 if (curEvent[0] === 'm') {
                     move(curEvent);
 
@@ -261,6 +261,10 @@ var engine = (function() {
                     _context.time = curEvent.jump;
                 }
                 _context.index++;
+                if(_context.index >= eventLength) {
+                    break;
+                }
+                curEvent = mySession.events[_context.index];
             }
             _context.time += 10;
             drawProgressBar(_session.events, _context.time * speed)
