@@ -257,7 +257,8 @@ var engine = (function() {
 
                 if(curEvent.jump) {
                     console.log('jump to: ', curEvent.jump);
-                    showHint('skip blank...')
+                    var distance = Math.floor((curEvent.jump - _context.time) / 1000)
+                    showHint('skip ' + distance + 's', 1000)
                     _context.time = curEvent.jump;
                 }
                 _context.index++;
