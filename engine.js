@@ -22,6 +22,8 @@ var engine = (function() {
         _mouse = drawMouse();
         if (isMobile(session.meta.ua)) {
             _mouse.style.opacity = 0;
+        } else {
+            _touchPoint.style.opacity = 0;
         }
         _progressBar = drawProgressBar(_session.events, 0);
         console.info('session loaded into engine');
