@@ -23,6 +23,6 @@
     "permissions": [
         "tabs",
         "activeTab",
-        "http://d.admx.baixing.com:8885/"
+        "http://your-server.com/"
     ]
 }
